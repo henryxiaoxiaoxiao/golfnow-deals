@@ -108,7 +108,7 @@ export default function SearchForm() {
               key={r}
               type="button"
               onClick={() => setRadiusMiles(r)}
-              className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
+              className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${
                 radiusMiles === r
                   ? "bg-green-600 text-white border-green-600"
                   : "bg-white text-gray-700 border-gray-300 hover:border-green-400"

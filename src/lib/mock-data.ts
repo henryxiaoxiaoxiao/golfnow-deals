@@ -1,4 +1,4 @@
-import { TeeTime } from "@/types";
+import { TeeTime, CourseTier } from "@/types";
 
 const COURSE_IMAGES = [
   "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400&h=250&fit=crop",
@@ -87,14 +87,24 @@ export function generateMockTeeTimes(
     const { iso, display } = generateDate(daysFromNow);
 
     const isHotDeal = Math.random() < 0.3;
-    const basePrice = 30 + Math.floor(Math.random() * 120);
+    const basePrice = 20 + Math.floor(Math.random() * 140);
     const discount = isHotDeal
       ? Math.floor(Math.random() * 40) + 20
       : Math.floor(Math.random() * 15);
     const price = Math.round(basePrice * (1 - discount / 100));
     const distance = Math.round(Math.random() * radiusMiles * 10) / 10;
-    const rating = Math.round((3 + Math.random() * 2) * 10) / 10;
+    const rating = Math.round((2.5 + Math.random() * 2.5) * 10) / 10;
     const holes = Math.random() > 0.3 ? 18 : 9;
+
+    // Determine tier based on rating and base price
+    let tier: CourseTier;
+    if (rating >= 4.3 && basePrice >= 70) {
+      tier = "premium";
+    } else if (rating < 3.8 && basePrice < 60) {
+      tier = "budget";
+    } else {
+      tier = "standard";
+    }
 
     teeTimes.push({
       id: `tt-${i}-${Date.now()}`,
@@ -120,6 +130,7 @@ export function generateMockTeeTimes(
       imageUrl: COURSE_IMAGES[i % COURSE_IMAGES.length],
       bookingUrl: `https://www.golfnow.com/tee-times/facility/${courseIndex}-${courseName.toLowerCase().replace(/\s+/g, "-")}/search`,
       distanceMiles: distance,
+      tier,
     });
   }
 

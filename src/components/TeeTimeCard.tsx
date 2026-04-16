@@ -81,6 +81,20 @@ export default function TeeTimeCard({
 
       {/* Content */}
       <div className="p-4">
+        {/* Tier badge */}
+        <div className="mb-2">
+          <span
+            className={`inline-block text-xs font-semibold px-2 py-0.5 rounded ${
+              teeTime.tier === "premium"
+                ? "bg-amber-100 text-amber-700"
+                : teeTime.tier === "standard"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-green-100 text-green-700"
+            }`}
+          >
+            {teeTime.tier === "premium" ? "Premium" : teeTime.tier === "standard" ? "Standard" : "Budget"}
+          </span>
+        </div>
         {/* Course name & rating */}
         <div className="flex items-start justify-between mb-2">
           <h3 className="font-semibold text-gray-900 text-lg leading-tight">

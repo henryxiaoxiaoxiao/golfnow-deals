@@ -22,6 +22,7 @@ export interface TeeTime {
   imageUrl: string;
   bookingUrl: string;
   distanceMiles: number;
+  tier: CourseTier;
 }
 
 export interface SearchParams {
@@ -54,6 +55,8 @@ export interface FavoriteCourse {
   createdAt: string;
 }
 
+export type CourseTier = "premium" | "standard" | "budget";
+
 export type SortField = "price" | "distance" | "rating" | "time";
 export type SortOrder = "asc" | "desc";
 
@@ -63,4 +66,5 @@ export interface FilterState {
   minRating: number | null;
   timeRange: [string, string] | null; // ["06:00", "18:00"]
   holes: number | null; // 9 or 18 or null for both
+  tier: CourseTier | null;
 }

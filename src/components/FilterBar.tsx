@@ -90,6 +90,35 @@ export default function FilterBar({
 
         <div className="h-6 w-px bg-gray-200 hidden sm:block" />
 
+        {/* Tier filter */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-700">Tier:</label>
+          <div className="flex gap-1">
+            {([null, "premium", "standard", "budget"] as const).map((t) => (
+              <button
+                key={t ?? "all"}
+                type="button"
+                onClick={() => onFiltersChange({ ...filters, tier: t })}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                  filters.tier === t
+                    ? t === "premium"
+                      ? "bg-amber-500 text-white border-amber-500"
+                      : t === "standard"
+                        ? "bg-blue-500 text-white border-blue-500"
+                        : t === "budget"
+                          ? "bg-green-500 text-white border-green-500"
+                          : "bg-gray-700 text-white border-gray-700"
+                    : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+                }`}
+              >
+                {t === null ? "All" : t === "premium" ? "Premium" : t === "standard" ? "Standard" : "Budget"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="h-6 w-px bg-gray-200 hidden sm:block" />
+
         {/* Min rating */}
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-700">Min Rating:</label>

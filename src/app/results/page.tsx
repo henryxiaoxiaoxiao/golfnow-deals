@@ -24,6 +24,7 @@ function ResultsContent() {
     minRating: null,
     timeRange: null,
     holes: null,
+    tier: null,
   });
   const [sortField, setSortField] = useState<SortField>("price");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
@@ -139,6 +140,9 @@ function ResultsContent() {
     }
     if (filters.holes !== null) {
       result = result.filter((t) => t.holes === filters.holes);
+    }
+    if (filters.tier !== null) {
+      result = result.filter((t) => t.tier === filters.tier);
     }
 
     // Apply sort
@@ -278,6 +282,7 @@ function ResultsContent() {
                       minRating: null,
                       timeRange: null,
                       holes: null,
+                      tier: null,
                     })
                   }
                   className="text-green-600 hover:text-green-700 font-medium cursor-pointer"
