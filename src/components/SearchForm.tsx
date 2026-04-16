@@ -10,6 +10,7 @@ export default function SearchForm() {
   const [email, setEmail] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [radiusMiles, setRadiusMiles] = useState(25);
+  const [date, setDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -40,6 +41,7 @@ export default function SearchForm() {
       zipCode,
       radius: radiusMiles.toString(),
     });
+    if (date) params.set("date", date);
 
     router.push(`/results?${params.toString()}`);
   }
@@ -118,6 +120,27 @@ export default function SearchForm() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Date */}
+      <div>
+        <label
+          htmlFor="date"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Date <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <input
+          id="date"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          min={new Date().toISOString().split("T")[0]}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors text-gray-900"
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          Leave empty to search all upcoming dates
+        </p>
       </div>
 
       {/* Submit */}

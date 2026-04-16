@@ -1,17 +1,31 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
 import TeeTimeCard from "@/components/TeeTimeCard";
 import FilterBar from "@/components/FilterBar";
 import { TeeTime, FilterState, SortField, SortOrder } from "@/types";
 
+const RADIUS_OPTIONS = [10, 15, 25, 50, 75, 100];
+
 function ResultsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const email = searchParams.get("email") || "";
   const zipCode = searchParams.get("zipCode") || "";
   const radius = parseInt(searchParams.get("radius") || "25");
+
+  const [editZip, setEditZip] = useState(zipCode);
+  const [editRadius, setEditRadius] = useState(radius);
+  const [editDate, setEditDate] = useState(searchParams.get("date") || "");
+
+  function handleUpdateSearch() {
+    if (!editZip || !/^\d{5}$/.test(editZip)) return;
+    const params = new URLSearchParams({ email, zipCode: editZip, radius: editRadius.toString() });
+    if (editDate) params.set("date", editDate);
+    router.push(`/results?${params.toString()}`);
+  }
 
   const [teeTimes, setTeeTimes] = useState<TeeTime[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,10 +198,10 @@ function ResultsContent() {
 
   return (
     <main className="flex-1 bg-gray-50 min-h-screen">
-      {/* Header */}
+      {/* Header with inline search controls */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-4 mb-3">
             <Link
               href="/"
               className="text-gray-500 hover:text-gray-700 transition-colors"
@@ -202,21 +216,64 @@ function ResultsContent() {
                 <path d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">
-                Tee Times near {zipCode}
-              </h1>
-              <p className="text-sm text-gray-500">
-                Within {radius} miles &middot; {email}
-              </p>
-            </div>
+            <h1 className="text-xl font-bold text-gray-900">
+              Tee Times near {zipCode}
+            </h1>
+            <span className="text-sm text-gray-500">{email}</span>
           </div>
-          <Link
-            href="/"
-            className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            New Search
-          </Link>
+          <div className="flex flex-wrap items-end gap-4">
+            {/* Zip code */}
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Zip Code</label>
+              <input
+                type="text"
+                value={editZip}
+                onChange={(e) => setEditZip(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                onKeyDown={(e) => e.key === "Enter" && handleUpdateSearch()}
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-gray-900"
+                maxLength={5}
+              />
+            </div>
+            {/* Radius */}
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Radius</label>
+              <div className="flex gap-1">
+                {RADIUS_OPTIONS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setEditRadius(r)}
+                    className={`px-2.5 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                      editRadius === r
+                        ? "bg-green-600 text-white border-green-600"
+                        : "bg-white text-gray-600 border-gray-300 hover:border-green-400"
+                    }`}
+                  >
+                    {r}mi
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Date */}
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Date</label>
+              <input
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-gray-900"
+              />
+            </div>
+            {/* Update button */}
+            <button
+              type="button"
+              onClick={handleUpdateSearch}
+              className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+            >
+              Update Search
+            </button>
+          </div>
         </div>
       </div>
 
