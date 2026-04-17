@@ -1,4 +1,5 @@
 import { TeeTime, CourseTier } from "@/types";
+import { Coords, haversineMiles, randomPointInRadius } from "./geo";
 
 const COURSE_IMAGES = [
   "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=400&h=250&fit=crop",
@@ -24,19 +25,6 @@ const COURSE_NAMES = [
   "Shadow Creek Golf Club",
   "Royal Oaks Golf & Tennis",
   "Greenfield Community Golf Course",
-];
-
-const CITIES = [
-  "San Francisco",
-  "San Jose",
-  "Oakland",
-  "Palo Alto",
-  "Mountain View",
-  "Fremont",
-  "Santa Clara",
-  "Sunnyvale",
-  "Hayward",
-  "Redwood City",
 ];
 
 function generateTimeSlots(): string[] {
@@ -73,7 +61,8 @@ function generateDate(daysFromNow: number): { iso: string; display: string } {
 
 export function generateMockTeeTimes(
   zipCode: string,
-  radiusMiles: number
+  radiusMiles: number,
+  center: Coords
 ): TeeTime[] {
   const teeTimes: TeeTime[] = [];
   const timeSlots = generateTimeSlots();
@@ -81,7 +70,13 @@ export function generateMockTeeTimes(
   for (let i = 0; i < 30; i++) {
     const courseIndex = i % COURSE_NAMES.length;
     const courseName = COURSE_NAMES[courseIndex];
-    const city = CITIES[i % CITIES.length];
+
+    const point = randomPointInRadius(center.lat, center.lng, radiusMiles);
+    const distance =
+      Math.round(
+        haversineMiles(center.lat, center.lng, point.lat, point.lng) * 10
+      ) / 10;
+
     const timeSlot = timeSlots[Math.floor(Math.random() * timeSlots.length)];
     const daysFromNow = Math.floor(Math.random() * 7) + 1;
     const { iso, display } = generateDate(daysFromNow);
@@ -92,11 +87,9 @@ export function generateMockTeeTimes(
       ? Math.floor(Math.random() * 40) + 20
       : Math.floor(Math.random() * 15);
     const price = Math.round(basePrice * (1 - discount / 100));
-    const distance = Math.round(Math.random() * radiusMiles * 10) / 10;
     const rating = Math.round((2.5 + Math.random() * 2.5) * 10) / 10;
     const holes = Math.random() > 0.3 ? 18 : 9;
 
-    // Determine tier based on rating and base price
     let tier: CourseTier;
     if (rating >= 4.3 && basePrice >= 70) {
       tier = "premium";
@@ -111,11 +104,11 @@ export function generateMockTeeTimes(
       courseName,
       courseId: `course-${courseIndex}`,
       address: `${1000 + i * 100} Golf Course Dr`,
-      city,
-      state: "CA",
+      city: center.city,
+      state: center.state,
       zipCode,
-      latitude: 37.3 + Math.random() * 0.5,
-      longitude: -122.0 - Math.random() * 0.5,
+      latitude: point.lat,
+      longitude: point.lng,
       dateTime: iso,
       displayTime: formatDisplayTime(timeSlot),
       displayDate: display,
@@ -128,11 +121,11 @@ export function generateMockTeeTimes(
       rating,
       reviewCount: Math.floor(Math.random() * 500) + 10,
       imageUrl: COURSE_IMAGES[i % COURSE_IMAGES.length],
-      bookingUrl: `https://www.golfnow.com/tee-times/facility/${courseIndex}-${courseName.toLowerCase().replace(/\s+/g, "-")}/search`,
+      bookingUrl: `https://www.golfnow.com/tee-times/search`,
       distanceMiles: distance,
       tier,
     });
   }
 
-  return teeTimes.sort((a, b) => a.price - b.price);
+  return teeTimes.sort((a, b) => a.distanceMiles - b.distanceMiles);
 }

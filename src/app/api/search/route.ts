@@ -1,14 +1,18 @@
 import { NextRequest } from "next/server";
 import { generateMockTeeTimes } from "@/lib/mock-data";
+import { zipToCoords } from "@/lib/geo";
+import { scrapeGolfNow } from "@/lib/scrape";
 import { getDb } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import path from "path";
 
+export const maxDuration = 60;
+
 const CACHE_DIR = path.join(process.cwd(), "data", "cache");
 const CACHE_MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 hours
 
-function readCache(zipCode: string) {
+function readCache(zipCode: string, radiusMiles: number) {
   try {
     const file = path.join(CACHE_DIR, `${zipCode}.json`);
     if (!fs.existsSync(file)) return null;
@@ -21,7 +25,13 @@ function readCache(zipCode: string) {
       return null;
     }
 
-    console.log(`Using cached data for ${zipCode} (${Math.round(age / 60000)}min old, ${data.teeTimes.length} results)`);
+    const cachedRadius = data.radiusMiles ?? 25;
+    if (radiusMiles > cachedRadius) {
+      console.log(`Cache for ${zipCode} was scraped at ${cachedRadius}mi, need ${radiusMiles}mi — re-scraping`);
+      return null;
+    }
+
+    console.log(`Using cached data for ${zipCode} (${Math.round(age / 60000)}min old, ${data.teeTimes.length} results, scraped @${cachedRadius}mi)`);
     return data.teeTimes;
   } catch {
     return null;
@@ -40,15 +50,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try cached real data first, then fall back to mock
-    let teeTimes = readCache(zipCode);
+    if (!/^\d{5}$/.test(zipCode)) {
+      return Response.json(
+        { error: "Zip code must be 5 digits" },
+        { status: 400 }
+      );
+    }
+
+    // Try cached real data first, then live-scrape, then fall back to mock
+    let teeTimes = readCache(zipCode, radiusMiles);
     let source = "cache";
+    let note: string | undefined;
 
     if (!teeTimes) {
-      console.log(`No cache for ${zipCode}, using mock data. Run: node scripts/scrape.cjs ${zipCode} ${radiusMiles}`);
-      teeTimes = generateMockTeeTimes(zipCode, radiusMiles);
-      source = "mock";
+      const coords = await zipToCoords(zipCode);
+      if (!coords) {
+        return Response.json(
+          { error: `Could not find location for zip code ${zipCode}` },
+          { status: 400 }
+        );
+      }
+
+      console.log(`No cache for ${zipCode} (${coords.city}, ${coords.state}), scraping live...`);
+      const scraped = await scrapeGolfNow(zipCode, radiusMiles, coords);
+
+      if (scraped && scraped.length > 0) {
+        console.log(`Scraped ${scraped.length} real courses for ${zipCode}`);
+        teeTimes = scraped;
+        source = "live";
+      } else {
+        console.log(`Scrape failed for ${zipCode}, falling back to mock`);
+        teeTimes = generateMockTeeTimes(zipCode, radiusMiles, coords);
+        source = "mock";
+        note = `Live data unavailable for ${coords.city}, ${coords.state} right now — showing sample listings.`;
+      }
     }
+
+    // Filter by requested radius (cache/scrape may include courses slightly beyond)
+    teeTimes = teeTimes.filter(
+      (t: { distanceMiles: number }) => t.distanceMiles <= radiusMiles
+    );
 
     // Save search to database
     try {
@@ -71,6 +112,7 @@ export async function POST(request: NextRequest) {
       teeTimes,
       total: teeTimes.length,
       source,
+      note,
       searchParams: { email, zipCode, radiusMiles },
     });
   } catch (error) {

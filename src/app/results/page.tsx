@@ -6,6 +6,7 @@ import Link from "next/link";
 import TeeTimeCard from "@/components/TeeTimeCard";
 import FilterBar from "@/components/FilterBar";
 import { TeeTime, FilterState, SortField, SortOrder } from "@/types";
+import { filterAndSort } from "@/lib/filter-sort";
 
 const RADIUS_OPTIONS = [10, 15, 25, 50, 75, 100];
 
@@ -30,6 +31,8 @@ function ResultsContent() {
   const [teeTimes, setTeeTimes] = useState<TeeTime[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [note, setNote] = useState<string | null>(null);
+  const [source, setSource] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   const [filters, setFilters] = useState<FilterState>({
@@ -58,12 +61,14 @@ function ResultsContent() {
           body: JSON.stringify({ email, zipCode, radiusMiles: radius }),
         });
 
-        if (!res.ok) throw new Error("Search failed");
-
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Search failed");
+
         setTeeTimes(data.teeTimes);
-      } catch {
-        setError("Failed to fetch tee times. Please try again.");
+        setSource(data.source ?? null);
+        setNote(data.note ?? null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch tee times. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -139,48 +144,10 @@ function ResultsContent() {
   );
 
   // Filter and sort tee times
-  const filteredTeeTimes = useMemo(() => {
-    let result = [...teeTimes];
-
-    // Apply filters
-    if (filters.hotDealsOnly) {
-      result = result.filter((t) => t.isHotDeal);
-    }
-    if (filters.maxPrice !== null) {
-      result = result.filter((t) => t.price <= filters.maxPrice!);
-    }
-    if (filters.minRating !== null) {
-      result = result.filter((t) => t.rating >= filters.minRating!);
-    }
-    if (filters.holes !== null) {
-      result = result.filter((t) => t.holes === filters.holes);
-    }
-    if (filters.tier !== null) {
-      result = result.filter((t) => t.tier === filters.tier);
-    }
-
-    // Apply sort
-    result.sort((a, b) => {
-      let cmp = 0;
-      switch (sortField) {
-        case "price":
-          cmp = a.price - b.price;
-          break;
-        case "distance":
-          cmp = a.distanceMiles - b.distanceMiles;
-          break;
-        case "rating":
-          cmp = a.rating - b.rating;
-          break;
-        case "time":
-          cmp = a.displayTime.localeCompare(b.displayTime);
-          break;
-      }
-      return sortOrder === "asc" ? cmp : -cmp;
-    });
-
-    return result;
-  }, [teeTimes, filters, sortField, sortOrder]);
+  const filteredTeeTimes = useMemo(
+    () => filterAndSort(teeTimes, filters, sortField, sortOrder),
+    [teeTimes, filters, sortField, sortOrder]
+  );
 
   if (!email || !zipCode) {
     return (
@@ -300,7 +267,8 @@ function ResultsContent() {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
               />
             </svg>
-            <p className="text-gray-600">Searching for the best deals...</p>
+            <p className="text-gray-600">Fetching live GolfNow tee times…</p>
+            <p className="text-xs text-gray-400 mt-1">First search for a zip takes 5–20 seconds while we pull real listings.</p>
           </div>
         ) : error ? (
           <div className="text-center py-20">
@@ -314,6 +282,29 @@ function ResultsContent() {
           </div>
         ) : (
           <>
+            {source === "mock" && note && (
+              <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <svg
+                    className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-yellow-800">Sample data</p>
+                    <p className="text-xs text-yellow-700 mt-0.5">{note}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <FilterBar
               filters={filters}
               onFiltersChange={setFilters}
