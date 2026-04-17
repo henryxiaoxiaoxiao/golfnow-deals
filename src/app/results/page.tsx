@@ -40,7 +40,7 @@ function ResultsContent() {
     holes: null,
     tier: null,
   });
-  const [sortField, setSortField] = useState<SortField>("price");
+  const [sortField, setSortField] = useState<SortField>("distance");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   // Fetch tee times

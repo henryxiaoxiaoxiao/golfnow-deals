@@ -114,8 +114,8 @@ export default function TeeTimeCard({
 
         {/* Location */}
         <p className="text-sm text-gray-500 mb-3">
-          {teeTime.city}, {teeTime.state} &middot; {teeTime.distanceMiles} mi
-          away
+          {teeTime.city}, {teeTime.state}
+          {teeTime.distanceMiles > 0 && <> &middot; {teeTime.distanceMiles} mi away</>}
         </p>
 
         {/* Date, time, holes */}
@@ -140,12 +140,20 @@ export default function TeeTimeCard({
         {/* Price */}
         <div className="flex items-end justify-between mb-4">
           <div>
-            <span className="text-2xl font-bold text-green-600">
-              ${teeTime.price}
-            </span>
-            {teeTime.discount > 0 && (
-              <span className="ml-2 text-sm text-gray-400 line-through">
-                ${teeTime.originalPrice}
+            {teeTime.price > 0 ? (
+              <>
+                <span className="text-2xl font-bold text-green-600">
+                  ${Number.isInteger(teeTime.price) ? teeTime.price : teeTime.price.toFixed(2)}
+                </span>
+                {teeTime.discount > 0 && (
+                  <span className="ml-2 text-sm text-gray-400 line-through">
+                    ${Number.isInteger(teeTime.originalPrice) ? teeTime.originalPrice : teeTime.originalPrice.toFixed(2)}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-lg font-semibold text-gray-500">
+                View Price
               </span>
             )}
           </div>

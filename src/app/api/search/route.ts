@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     let source = "cache";
 
     if (!teeTimes) {
-      console.log(`No cache for ${zipCode}, using mock data. Run: node scripts/scrape.mjs ${zipCode} ${radiusMiles}`);
+      console.log(`No cache for ${zipCode}, using mock data. Run: node scripts/scrape.cjs ${zipCode} ${radiusMiles}`);
       teeTimes = generateMockTeeTimes(zipCode, radiusMiles);
       source = "mock";
     }
